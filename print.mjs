@@ -1,4 +1,3 @@
-﻿<?php
 
 function printTable($arr) {
     if (count($arr) == 0) {

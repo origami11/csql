@@ -1,6 +1,4 @@
-﻿<?php
-
-function groupBy($arr, $key) {
+﻿function groupBy($arr, $key) {
     $result = [];
     foreach($arr as $item) {
         $name = $item[$key];

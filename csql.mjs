@@ -1,8 +1,8 @@
 #!/usr/bin/node
 
-require_once __DIR__ . "./parse";
-require_once __DIR__ . "./eval";
-require_once __DIR__ . "./print";
+import { parseSQL, SQLParser } from "./parse";
+import { evalSQL } from "./eval";
+import { printCSV, printJson, printTable } from "./print";
 
 function executeSQL($s, $fn, $config) {
     $ast = parseSQL($s);
