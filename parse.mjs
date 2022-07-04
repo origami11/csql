@@ -104,21 +104,20 @@ export class SQLParser {
     }
 
     parseTerm() {    
-        let first = this.parseVal();
-        let op;
+        let first = this.parseVal(), op;
         if (this.ifTok('IN')) {
             this.reqTok('('); 
-            args = this.parseExprList(); 
+            let args = this.parseExprList(); 
             this.reqTok(')');
-                                
+                               
             return {'op': 'IN', 'first': first, 'list': args};
         } else if (this.ifTok('NOT')) {
             if (this.ifTok('LIKE')) {
-                return {'op': 'NOT-LIKE', 'first': first, 'second': this.parseExpr()};
+                return {'op': 'NOT-LIKE', 'first': first, 'second': this.parseTerm()};
             }
             throw new Exception("Expected LIKE");
         } else if (op = this.ifTok(['>=', '<=', '>', '<', '<>' , '!=', '=', '~=', 'LIKE'])) {
-            return {'op': op, 'first': first, 'second': this.parseExpr()};
+            return {'op': op, 'first': first, 'second': this.parseTerm()};
         }
         return first;
     }
@@ -148,7 +147,7 @@ export class SQLParser {
     }
 
     parseExpr() {
-        return this.parseBool();
+        return this.parseMul();
     }
 
      parseSQL() {

@@ -69,9 +69,9 @@ function evalExpr(item, expr) {
             return evalExpr(item, expr['first']) / evalExpr(item, expr['second']);
         }
         if (op == 'IN') {
-            v = evalExpr(item, expr['first']);
-            for(let expr of expr['list']) {
-                if (v == evalExpr(item, expr)) {
+            let v = evalExpr(item, expr['first']);
+            for(let data of expr['list']) {
+                if (v == evalExpr(item, data)) {
                     return true;
                 }
             }
@@ -89,7 +89,7 @@ function evalExpr(item, expr) {
         if ((op == '<>' || op == '!=')) {
             return evalExpr(item, expr['first']) != evalExpr(item, expr['second']);
         }
-        if (op == '=') {
+        if (op == '=') {       
             return evalExpr(item, expr['first']) == evalExpr(item, expr['second']);
         }
         if (op == '>') {
@@ -126,7 +126,7 @@ function evalExpr(item, expr) {
 
 function evalAgg(data, k) {
     // AVG, MIN, MAX
-    if (k['op'] == 'call' && in_array(k['fn'], ['COUNT', 'SUM', 'MIN', 'MAX', 'AVG'])) {
+    if (k['op'] == 'call' && ['COUNT', 'SUM', 'MIN', 'MAX', 'AVG'].includes(k['fn'])) {
         if (k['fn'] == 'IF') {
             if (evalExpr(data, k['args'][0])) {
                 return evalExpr(data, k['args'][1]);
@@ -136,11 +136,11 @@ function evalAgg(data, k) {
             return 0;
         }
         if (k['fn'] == 'COUNT') {
-            return count(data);
+            return data.length;
         }
         if (k['fn'] == 'MAX') {
             val = evalExpr(data[0], k['args'][0]);
-            for(let i = 1; i < count(data); i++) {
+            for(let i = 1; i < data.length; i++) {
                 val = max(val, evalExpr(data[i], k['args'][0]));
             }
     
@@ -148,7 +148,7 @@ function evalAgg(data, k) {
         }
         if (k['fn'] == 'MIN') {
             val = evalExpr(data[0], k['args'][0]);
-            for(let i = 1; i < count(data); i++) {
+            for(let i = 1; i < data.length; i++) {
                 val = min(val, evalExpr(data[i], k['args'][0]));
             }
     
@@ -169,9 +169,9 @@ function evalAgg(data, k) {
 
 function isAggregate(keys) {
     for (let k of keys) {
-        if (Array.isArray(k['input']) 
+        if (isObject(k['input']) 
             && k['input']['op'] == 'call' 
-            && in_array(k['input']['fn'], ['COUNT', 'SUM', 'MIN', 'MAX', 'AVG'])) 
+            && ['COUNT', 'SUM', 'MIN', 'MAX', 'AVG'].includes(k['input']['fn'])) 
         {
             return true;
         }
@@ -237,14 +237,15 @@ export function evalSQL(ast, fn, config) {
     if (ast.hasOwnProperty('select')) {
         let result = [];
         let keys = ast['select'];
-
+        
         if (isAggregate(keys) && !group) {
             let row = [];
+            
             for(let n in keys) {
                 let key = keys[n];
                 let k = key['input'];
                 let out = key['output'] ? key['output'] : key['input'];
-                if (Array.isArray(k)) {
+                if (isObject(k)) {
                     out = key['output'] ? key['output'] : 'out' + n;
                     row[out] = evalAgg(table, k);
                 }
@@ -258,7 +259,7 @@ export function evalSQL(ast, fn, config) {
                     let key = keys[j];
                     let k = key['input'];
                     let out = key['output'] ? key['output'] : key['input'];
-                    if (Array.isArray(k)) {
+                    if (isObject(k)) {
                         out = key['output'] ? key['output'] : 'out' + j;
                         item[out] = evalAgg(isset(row['_group_']) ? row['_group_'] : row, k);
                     } else if (k == '*') {
