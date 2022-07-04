@@ -3,7 +3,7 @@ export class SQLParser {
     pos = 0;
 
     tokenizeSQL(s) {
-        let tokens = s.match(new RegExp("\\w+|\\*|\\+|-|\\/|!=|~=|=|<>|,|>|<|\\(|\\)|\\'[^\\']*\\'", 'g'));
+        let tokens = s.match(new RegExp("[A-Za-z][\\w_]*|(?<Number>\\d+(\\.\\d*)?)|\\*|\\+|-|\\/|!=|~=|=|<>|,|>=|<=|>|<|\\(|\\)|\\'[^\\']*\\'", 'g'));
         return tokens;
     }
 
@@ -40,7 +40,6 @@ export class SQLParser {
     }
 
     isId(tok) {
-        // number or word
         return tok.match(/^\w+/);
     }
 
@@ -118,7 +117,7 @@ export class SQLParser {
                 return {'op': 'NOT-LIKE', 'first': first, 'second': this.parseExpr()};
             }
             throw new Exception("Expected LIKE");
-        } else if (op = this.ifTok(['>', '<', '<>' , '!=', '=', '~=', 'LIKE'])) {
+        } else if (op = this.ifTok(['>=', '<=', '>', '<', '<>' , '!=', '=', '~=', 'LIKE'])) {
             return {'op': op, 'first': first, 'second': this.parseExpr()};
         }
         return first;
@@ -141,7 +140,7 @@ export class SQLParser {
     }
 
     parseBool() {
-        let first = this.parseSum(), op;        
+        let first = this.parseSum(), op;
         if (op = this.ifTok(['AND', 'OR'])) {
             return {'op': op, 'first': first, 'second': this.parseBool()};
         }

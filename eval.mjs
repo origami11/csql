@@ -1,3 +1,7 @@
+let isObject = function(a) {
+    return (!!a) && (a.constructor === Object);
+};
+
 ﻿function groupBy(arr, key) {
     let result = [];
     for(let item of arr) {
@@ -32,7 +36,7 @@ function orderBy(arr, key, dir) {
 }
 
 function evalExpr(item, expr) {
-    if (Array.isArray(expr)) {
+    if (isObject(expr)) {
         let op = expr['op'];
         if (op == 'call') {
             if (expr['fn'] == 'trim') {
@@ -91,6 +95,9 @@ function evalExpr(item, expr) {
         if (op == '>') {
             return evalExpr(item, expr['first']) > evalExpr(item, expr['second']);
         }
+        if (op == '>=') {
+            return evalExpr(item, expr['first']) >= evalExpr(item, expr['second']);
+        }
         if (op == '<') {
             return evalExpr(item, expr['first']) < evalExpr(item, expr['second']);
         }
@@ -107,11 +114,12 @@ function evalExpr(item, expr) {
         return true;
     }
 
-    if (is_numeric(expr)) {
-        return floatval(expr);
+    let n = parseFloat(expr);
+    if (!isNaN(n)) {
+        return n;
     }
-    if (expr[0] == '\'' && expr[strlen(expr) - 1] == '\'') {
-        return substr(expr, 1, -1);
+    if (expr[0] == '\'' && expr[expr.length - 1] == '\'') {
+        return expr.substring(1, expr.length-1);
     }
     return item[expr];
 }

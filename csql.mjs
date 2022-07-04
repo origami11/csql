@@ -46,9 +46,7 @@ if (process.argv.length > 3 && process.argv[3] == 'ast') {
     console.log('TOKENS', tok);
 
     let ast = parseSQL(query);
-    console.log('AST', ast /*JSON.stringify(ast, null, 2)*/);
-
-    
+    console.log('AST', ast /*JSON.stringify(ast, null, 2)*/);   
 } else {
     let result = executeSQL(query, loadJSON, []);
 

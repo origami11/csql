@@ -1,11 +1,11 @@
 function getColSize(arr) {
-    let size = [];
+    let size = {};
     for(let item of arr) {
         for(let k in item) {
             let n = item[k];
-            
-            if (!size.hasOwnProperty(k)) size[k] = 0;
-            size[k] = Math.max(size[k], n.length);
+            if (!size.hasOwnProperty(k)) { size[k] = 0; }
+          
+            size[k] = Math.max(size[k], n.toString().length);
         }
     }
     return size;
@@ -23,16 +23,16 @@ export function printTable(arr) {
 
     arr.unshift(first);
 
-    let size = getColSize(arr);
+    let size = getColSize(arr);    
     let values = arr;
     let N = arr.length.length;
     for(let i in values) {
         let item = values[i];
         
-        let s = " " +  i +  ' '.repeat(N - i.length) + " | ";
+        let s = " " +  i +  (' '.repeat(N - i.length)) + ' | ';
         for(let k in item) {
             let n = item[k];
-            s += n + ' '.repeat(size[k] - n.length) +  ' | '; 
+            s += n + ' '.repeat(size[k] - n.toString().length) +  ' | '; 
         }
         console.log(s);
     }
