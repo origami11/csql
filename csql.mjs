@@ -12,7 +12,7 @@ function executeSQL(s, fn, config) {
 
 function loadTable(name, config) {
     let path = "./" + name + ".csv";
-//  echo "open ", path, "\n";
+
     let data = fs.readFileSync(path, 'utf-8').split(';');
     let result = [];
     let first = data.shift();
@@ -34,7 +34,6 @@ function loadJSON(name, config) {
     if (!fs.existsSync(path)) {
         path = name + ".json";
     }
-//    echo "open ", path, "\n";
     let result = JSON.parse(fs.readFileSync(path, 'utf-8'), true);
     return result;
 }
@@ -46,7 +45,7 @@ if (process.argv.length > 3 && process.argv[3] == 'ast') {
     console.log('TOKENS', tok);
 
     let ast = parseSQL(query);
-    console.log('AST', ast /*JSON.stringify(ast, null, 2)*/);   
+    console.log('AST', JSON.stringify(ast, null, 2));
 } else {
     let result = executeSQL(query, loadJSON, []);
 

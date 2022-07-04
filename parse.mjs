@@ -94,7 +94,7 @@ export class SQLParser {
         return fields;
     }
 
-     parseExprList() {
+    parseExprList() {
         let args = [ this.parseExpr() ];
 
         while(this.ifTok(',')) {
@@ -150,8 +150,8 @@ export class SQLParser {
         return this.parseMul();
     }
 
-     parseSQL() {
-        let ast = [];
+    parseSQL() {
+        let ast = {};
         if (this.ifTok('SELECT')) {
             ast['select'] = this.parseSQLArgs();
 
@@ -212,4 +212,3 @@ export function parseSQL(s) {
     let ast = p.parse(s);
     return ast;
 }
-
