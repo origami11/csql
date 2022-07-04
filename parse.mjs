@@ -1,15 +1,14 @@
 
-class SQLParser {
+export class SQLParser {
     pos = 0;
 
     tokenizeSQL(s) {
-        let tokens = array();
-        preg_match_all('/\w+|\*|\+|-|\/|!=|~=|=|<>|,|>|<|\(|\)|\'[^\']*\'/', s, tokens);
-        return tokens[0];
+        let tokens = s.match(new RegExp("\\w+|\\*|\\+|-|\\/|!=|~=|=|<>|,|>|<|\\(|\\)|\\'[^\\']*\\'", 'g'));
+        return tokens;
     }
 
     getTok(n = 0) {
-        if ((this.i + n) < count(this.tokens)) {
+        if ((this.i + n) < this.tokens.length) {
             return this.tokens[this.i + n];
         }
         return null;
@@ -22,7 +21,7 @@ class SQLParser {
 
     ifTok(name) {
         let result = this.getTok();
-        if (Array.isArray(name) && in_array(result, name)) {
+        if (Array.isArray(name) && name.includes(result)) {
             this.nextTok();
             return result;
         }           
@@ -33,22 +32,22 @@ class SQLParser {
         return false;
     }
 
-     reqTok(name) {
+    reqTok(name) {
         if (this.getTok() != name) {
-            throw new Exception('Expected token ' + name);
+            throw new Error('Expected token ' + name);
         }       
         this.nextTok(); 
     }
 
-     isId(tok) {
+    isId(tok) {
         // number or word
-        return preg_match('/^\w+/', tok);
+        return tok.match(/^\w+/);
     }
 
     parseId() {
         let id = this.getTok();
         if (!this.isId(id)) {
-            throw new Exception('Expected identifier');
+            throw new Error('Expected identifier');
         }
         this.nextTok();
         return id;
@@ -57,10 +56,10 @@ class SQLParser {
     parseArg() {
         let input = this.parseExpr();
         if (this.ifTok('AS')) {
-            return ['input' => input, 'output' => this.parseId()];
+            return {'input': input, 'output': this.parseId()};
         }
 
-        return ['input' => input, 'output' => null];
+        return {'input': input, 'output': null};
     }
 
     parseVal() {
@@ -81,7 +80,7 @@ class SQLParser {
         if (this.isId(tok) && this.ifTok('(')) {
             let args = this.parseExprList(); 
             this.reqTok(')');
-            return ['op' => 'call', 'fn' => tok, 'args' => args];
+            return {'op': 'call', 'fn': tok, 'args': args};
         }
         
         return tok;
@@ -89,9 +88,9 @@ class SQLParser {
 
     parseSQLArgs() {
         let fields = [ this.parseArg() ];
-        while(!in_array(this.getTok(), ['FROM', 'WHERE', 'ORDER', 'GROUP', null])) {
+        while(!['FROM', 'WHERE', 'ORDER', 'GROUP', null].includes(this.getTok())) {
             this.reqTok(',');
-            fields[] = this.parseArg();
+            fields.push(this.parseArg());
         }
         return fields;
     }
@@ -100,50 +99,51 @@ class SQLParser {
         let args = [ this.parseExpr() ];
 
         while(this.ifTok(',')) {
-            args[] = this.parseExpr();
+            args.push(this.parseExpr());
         }                    
         return args;
     }
 
     parseTerm() {    
         let first = this.parseVal();
+        let op;
         if (this.ifTok('IN')) {
             this.reqTok('('); 
             args = this.parseExprList(); 
             this.reqTok(')');
                                 
-            return ['op' => 'IN', 'first' => first, 'list' => args];
+            return {'op': 'IN', 'first': first, 'list': args};
         } else if (this.ifTok('NOT')) {
             if (this.ifTok('LIKE')) {
-                return ['op' => 'NOT-LIKE', 'first' => first, 'second' => this.parseExpr()];
+                return {'op': 'NOT-LIKE', 'first': first, 'second': this.parseExpr()};
             }
             throw new Exception("Expected LIKE");
         } else if (op = this.ifTok(['>', '<', '<>' , '!=', '=', '~=', 'LIKE'])) {
-            return ['op' => op, 'first' => first, 'second' => this.parseExpr()];
+            return {'op': op, 'first': first, 'second': this.parseExpr()};
         }
         return first;
     }
 
     parseMul() {
-        let first = this.parseTerm();        
+        let first = this.parseTerm(), op;        
         if (op = this.ifTok(['*', '/'])) {
-            return ['op' => op, 'first' => first, 'second' => this.parseMul()];
+            return {'op': op, 'first': first, 'second': this.parseMul()};
         }
         return first;
     }
 
     parseSum() {
-        let first = this.parseMul();        
+        let first = this.parseMul(), op;                
         if (op = this.ifTok(['+', '-'])) {
-            return ['op' => op, 'first' => first, 'second' => this.parseSum()];
+            return {'op': op, 'first': first, 'second': this.parseSum()};
         }
         return first;
     }
 
     parseBool() {
-        let first = this.parseSum();        
+        let first = this.parseSum(), op;        
         if (op = this.ifTok(['AND', 'OR'])) {
-            return ['op' => op, 'first' => first, 'second' => this.parseBool()];
+            return {'op': op, 'first': first, 'second': this.parseBool()};
         }
         return first;
     }
@@ -158,11 +158,11 @@ class SQLParser {
             ast['select'] = this.parseSQLArgs();
 
             if (this.ifTok('FROM')) {
-                ast['from'] = ['table' => this.parseId()];
+                ast['from'] = {'table': this.parseId()};
             }
 
             if (this.ifTok('JOIN')) {
-                ast['join'] = ['table' => this.parseId()];
+                ast['join'] = {'table': this.parseId()};
 
                 if (this.ifTok('USING')) {
                     ast['using'] = this.parseId();
@@ -178,12 +178,12 @@ class SQLParser {
 
         if (this.ifTok('GROUP')) {
             this.reqTok('BY');
-            ast['group'] = ['field' => this.parseId()];
+            ast['group'] = {'field': this.parseId()};
         }
 
         if (this.ifTok('ORDER')) {
             this.reqTok('BY');
-            ast['order'] = ['field' => this.parseId(), 'dir' => 'ASC'];
+            ast['order'] = {'field': this.parseId(), 'dir': 'ASC'};
             
             if (tok = this.ifTok(['ASC', 'DESC'])) {
                 ast['order']['dir'] = tok;
@@ -191,13 +191,13 @@ class SQLParser {
         }
 
         if (this.ifTok('LIMIT')) {
-            ast['limit'] = ['count' => this.getTok()];
+            ast['limit'] = {'count': this.getTok()};
             this.nextTok();
         }
 
-        tok = this.getTok();
+        let tok = this.getTok();
         if (tok) {
-            throw new Exception('Unexpected token ' + tok);
+            throw new Error('Unexpected token ' + tok);
         }
         return ast;
     }
@@ -209,9 +209,9 @@ class SQLParser {
     }
 }
 
-function parseSQL(s) {
-    p = new SQLParser();
-    ast = p.parse(s);
+export function parseSQL(s) {
+    let p = new SQLParser();
+    let ast = p.parse(s);
     return ast;
 }
 

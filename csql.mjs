@@ -1,9 +1,9 @@
 #!/usr/bin/node
 
 import * as fs from "fs";
-import { parseSQL, SQLParser } from "./parse";
-import { evalSQL } from "./eval";
-import { printCSV, printJson, printTable } from "./print";
+import { parseSQL, SQLParser } from "./parse.mjs";
+import { evalSQL } from "./eval.mjs";
+import { printCSV, printJSON, printTable } from "./print.mjs";
 
 function executeSQL(s, fn, config) {
     let ast = parseSQL(s);
@@ -11,55 +11,52 @@ function executeSQL(s, fn, config) {
 }
 
 function loadTable(name, config) {
-    path = "./" + name + ".csv";
+    let path = "./" + name + ".csv";
 //  echo "open ", path, "\n";
-    data = file(path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    result = [];
-    first = array_shift(data);
-    first = explode(";", first);
+    let data = fs.readFileSync(path, 'utf-8').split(';');
+    let result = [];
+    let first = data.shift();
+    first = first.split(';');
 
-    foreach(data as item) {
-        item = explode(";", item);
-        foreach(first as n => key) {
-            row[key] = item[n];
+    for(let item of data) {
+        let item = item.split(';');
+        for(let n in first) {
+            row[first[n]] = item[n];
         }
-        result [] = row;
+        result.push(row);
     }
 
     return result;
 }
 
 function loadJSON(name, config) {
-    let path = getenv('HOME') + "/" + name + ".json";
-    if (!file_exists(path))  {
+    let path = process.env.HOME + "/" + name + ".json";
+    if (!fs.existsSync(path)) {
         path = name + ".json";
     }
 //    echo "open ", path, "\n";
-    let result = json_decode(file_get_contents(path), true);
-
+    let result = JSON.parse(fs.readFileSync(path, 'utf-8'), true);
     return result;
 }
 
-let query = argv[1];
-if (isset(argv[2]) && argv[2] == 'ast') {
+let query = process.argv[2];
+if (process.argv.length > 3 && process.argv[3] == 'ast') {
     let p = new SQLParser();
     let tok = p.tokenizeSQL(query);
-    console.log(tok);
+    console.log('TOKENS', tok);
 
-    ast = parseSQL(query);
-    console.log(ast);
+    let ast = parseSQL(query);
+    console.log('AST', ast /*JSON.stringify(ast, null, 2)*/);
 
-    exit(0);
-}
-
-let result = executeSQL(query, 'loadJSON', []);
-
-//print_r(result);
-
-if (isset(argv[2]) && argv[2] == 'csv') {
-    printCSV(result);
-} else if (isset(argv[2]) && argv[2] == 'json') {
-    printJson(result);
+    
 } else {
-    printTable(result);
+    let result = executeSQL(query, loadJSON, []);
+
+    if (process.argv.length > 3 && process.argv[3] == 'csv') {
+        printCSV(result);
+    } else if (process.argv.length > 3 && process.argv[3] == 'json') {
+        printJSON(result);
+    } else {
+        printTable(result);
+    }
 }

@@ -1,48 +1,63 @@
+function getColSize(arr) {
+    let size = [];
+    for(let item of arr) {
+        for(let k in item) {
+            let n = item[k];
+            
+            if (!size.hasOwnProperty(k)) size[k] = 0;
+            size[k] = Math.max(size[k], n.length);
+        }
+    }
+    return size;
+}
 
-function printTable(arr) {
-    if (count(arr) == 0) {
+export function printTable(arr) {
+    if (arr.length == 0) {
         return;
     }
-    let keys = array_keys(arr[0]);
+    let keys = Object.keys(arr[0]);
     let first = [];
-    foreach(keys as k) {
+    for(let k of keys) {
         first[k] = k;
     }
 
-    array_unshift(arr, first);
+    arr.unshift(first);
 
     let size = getColSize(arr);
-    let values = array_values(arr);
-    let N = strlen(count(arr));
-    foreach(values as i => item) {
-        echo " ", i,str_repeat(' ', N - mb_strlen(i))," | ";
-        foreach(item as k => n) {
-            echo n, str_repeat(' ', size[k] - mb_strlen(n)), ' | '; 
+    let values = arr;
+    let N = arr.length.length;
+    for(let i in values) {
+        let item = values[i];
+        
+        let s = " " +  i +  ' '.repeat(N - i.length) + " | ";
+        for(let k in item) {
+            let n = item[k];
+            s += n + ' '.repeat(size[k] - n.length) +  ' | '; 
         }
-        echo "\n";
+        console.log(s);
     }
 }
 
-function printCSV(arr) {
-    if (count(arr) == 0) {
+export function printCSV(arr) {
+    if (arr.length == 0) {
         return;
     }
-    let keys = array_keys(arr[0]);
+    let keys = Object.keys(arr[0]);
     let first = [];
-    foreach(keys as k) {
+    for(let k of keys) {
         first[k] = k;
     }
 
-    array_unshift(arr, first);
+    arr.unshift(first);
 
-    let values = array_values(arr);
-    let N = strlen(count(arr));
-    foreach(values as i => item) {
-        echo implode(";", item);
-        echo "\n";
+    let values = arr;
+    let N = arr.length.length;
+    for(let i in values) {
+        let item = values[i];
+        console.log(item.join(';'));
     }
 }
 
-function printJSON(arr) {
+export function printJSON(arr) {
     console.log(JSON.stringify(arr, 0, 2));
 }
