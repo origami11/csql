@@ -1,3 +1,7 @@
+function isNumber(s) {
+    return s.match(/^\d+(\.\d+)?$/);
+}
+
 let isObject = function(a) {
     return (!!a) && (a.constructor === Object);
 };
@@ -23,13 +27,12 @@ function select(fn, arr) {
 
 function orderBy(arr, key, dir) {
     if (dir == 'ASC') {
-        sort(arr, function (a, b) {
-    //        return strnatcmp(b[key], a[key]);
-            return strnatcmp(b[key], a[key]);
+        arr.sort(function (a, b) {
+            return b[key].toString().localeCompare(a[key]);
         });
     } else {
-        sort(arr, function (a, b) {
-            return strnatcmp(a[key], b[key]);
+        arr.sort(function (a, b) {
+            return a[key].toString().localeCompare(b[key]);
         });
     }
     return arr;
@@ -40,15 +43,16 @@ function evalExpr(item, expr) {
         let op = expr['op'];
         if (op == 'call') {
             if (expr['fn'] == 'trim') {
-                return trim(evalExpr(item, expr['args'][0]));
+                return evalExpr(item, expr['args'][0]).trim();
             }
     
             if (expr['fn'] == 'strlen') {
-                return strlen(evalExpr(item, expr['args'][0]));
+                return evalExpr(item, expr['args'][0]).length;
             }
     
             if (k['fn'] == 'date') {
-                return date('d.m.Y H:i', evalExpr(item, k['args'][0]));
+                let d = new Date(evalExpr(item, k['args'][0]) * 1000);
+                return d.toLocaleDateString();
             }
 
             return false;
@@ -114,12 +118,12 @@ function evalExpr(item, expr) {
         return true;
     }
 
-    let n = parseFloat(expr);
-    if (!isNaN(n)) {
-        return n;
+    if (isNumber(expr)) {
+        return parseFloat(expr);
     }
-    if (expr[0] == '\'' && expr[expr.length - 1] == '\'') {
-        return expr.substring(1, expr.length-1);
+    if (expr.charAt(0) == '\'' && expr.charAt(expr.length - 1) == '\'') {
+        let s = expr.substring(1, expr.length-1);
+        return s;
     }
     return item[expr];
 }

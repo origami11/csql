@@ -54,6 +54,7 @@ if (process.argv.length > 3 && process.argv[3] == 'ast') {
     } else if (process.argv.length > 3 && process.argv[3] == 'json') {
         printJSON(result);
     } else {
+        console.log('Terminal size: ' + process.stdout.columns + 'x' + process.stdout.rows);
         printTable(result);
     }
 }

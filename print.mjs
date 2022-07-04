@@ -32,7 +32,7 @@ export function printTable(arr) {
         let s = " " +  i +  (' '.repeat(N - i.length)) + ' | ';
         for(let k in item) {
             let n = item[k];
-            s += n + ' '.repeat(size[k] - (n ? n.toString().length : 0)) +  ' | '; 
+            s += n.toString().replace(/\r|\t|\n/g, ' ') + ' '.repeat(size[k] - (n ? n.toString().length : 0)) +  ' | '; 
         }
         console.log(s);
     }
@@ -53,7 +53,7 @@ export function printCSV(arr) {
     let values = arr;
     for(let i in values) {
         let item = values[i];
-        console.log(item.join(';'));
+        console.log(Object.values(item).join(';'));
     }
 }
 

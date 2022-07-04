@@ -182,7 +182,7 @@ export class SQLParser {
         if (this.ifTok('ORDER')) {
             this.reqTok('BY');
             ast['order'] = {'field': this.parseId(), 'dir': 'ASC'};
-            
+            let tok;
             if (tok = this.ifTok(['ASC', 'DESC'])) {
                 ast['order']['dir'] = tok;
             }
