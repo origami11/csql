@@ -74,11 +74,11 @@ export class SQLParser {
         }
 
         let tok = this.getTok();
-        if (this.isId(tok)) {
+        if (tok != ')') {
             this.nextTok();
         
-            if (this.ifTok('(')) {
-                let args = this.parseExprList(); 
+            if (this.isId(tok) && this.ifTok('(')) {
+                let args = this.parseExprList();                 
                 this.reqTok(')');
                 return {'op': 'call', 'fn': tok, 'args': args};
             }
@@ -172,7 +172,7 @@ export class SQLParser {
 
         if (this.ifTok('FROM')) {
             let tok = this.parseId(), expr, alias = null;
-            
+           
             if (this.ifTok('(')) {
                 let args = this.parseExprList(); 
                 this.reqTok(')');

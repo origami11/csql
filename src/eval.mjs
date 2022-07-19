@@ -1,4 +1,4 @@
-import { loadcsv, loadJSON } from './files.mjs';
+import { loadcsv, loadJSON, klawSync } from './files.mjs';
 import * as process from "process";
 
 function isNumber(s) {
@@ -14,8 +14,8 @@ let state = {index: 0}
 ﻿function groupBy(arr, key) {
     let result = [];
     for(let item of arr) {
-        name = item[key];
-        if (!isset(result[name])) {
+        let name = item[key];
+        if (!result.hasOwnProperty(name)) {
             result[name] = {'_group_': []};
             result[name][key] = name;
         }
@@ -23,7 +23,7 @@ let state = {index: 0}
         result[name]['_group_'].push(item);
     }
 
-    return array_values(result);
+    return Object.values(result);
 }
 
 function select(fn, arr) {
@@ -61,8 +61,10 @@ function evalExpr(item, expr) {
             }
 
             // Загрузка директории
-            if (expr['fn'] == 'lsd') {
-                //return loaddir();
+            if (expr['fn'] == 'files') {
+                let args = expr['args'].map(arg => evalExpr(item, arg));
+                let result = klawSync(args[0], { nodir: true });
+                return result;
             }
     
             if (expr['fn'] == 'strlen') {
@@ -201,7 +203,7 @@ function evalAgg(data, k) {
             return val;
         }
         if (k['fn'] == 'SUM') {
-            sum = 0;
+            let sum = 0;
             for(let item of data) {
                 sum += item[k['args'][0]];
             }
@@ -226,6 +228,7 @@ function isAggregate(keys) {
 }
 
 function evalData(ast, table, config) {
+    let group = false;
     if (table == null) {
         throw new Error('No data');
     }
@@ -317,8 +320,8 @@ function evalData(ast, table, config) {
 
 export function evalSQL(ast, config) {
     return new Promise((resolve, reject) => {
-        let group = false, table = [];
         if (ast.hasOwnProperty('from')) {
+            let table = [];
             if (isObject(ast['from']['table'])) {
                 table = evalExpr({}, ast['from']['table']);   
             } else {
