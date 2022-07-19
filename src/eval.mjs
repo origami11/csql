@@ -33,10 +33,16 @@ function select(fn, arr) {
 function orderBy(arr, key, dir) {
     if (dir == 'ASC') {
         arr.sort(function (a, b) {
+            if (typeof b[key] == 'number' && typeof a[key] == 'number') {
+                return b[key] - a[key];
+            }
             return b[key].toString().localeCompare(a[key]);
         });
     } else {
         arr.sort(function (a, b) {
+            if (typeof b[key] == 'number' && typeof a[key] == 'number') {
+                return a[key] - b[key];
+            }
             return a[key].toString().localeCompare(b[key]);
         });
     }
@@ -52,6 +58,11 @@ function evalExpr(item, expr) {
             }
             if (expr['fn'] == 'trim') {
                 return evalExpr(item, expr['args'][0]).trim();
+            }
+
+            if (expr['fn'] == 'concat') {
+                let args = expr['args'].map(arg => evalExpr(item, arg));            
+                return args.join('');
             }
 
             // Загрузка csv
