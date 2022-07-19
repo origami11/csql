@@ -1,3 +1,6 @@
+import { loadcsv, loadJSON } from './files.mjs';
+import * as process from "process";
+
 function isNumber(s) {
     return s.match(/^\d+(\.\d+)?$/);
 }
@@ -5,6 +8,8 @@ function isNumber(s) {
 let isObject = function(a) {
     return (!!a) && (a.constructor === Object);
 };
+
+let state = {index: 0}
 
 ﻿function groupBy(arr, key) {
     let result = [];
@@ -42,12 +47,44 @@ function evalExpr(item, expr) {
     if (isObject(expr)) {
         let op = expr['op'];
         if (op == 'call') {
+            if (expr['fn'] == 'row_number') {
+                return state.index;
+            }
             if (expr['fn'] == 'trim') {
                 return evalExpr(item, expr['args'][0]).trim();
+            }
+
+            // Загрузка csv
+            if (expr['fn'] == 'csv') {
+                let args = expr['args'].map(arg => evalExpr(item, arg));            
+                return loadcsv.apply(null, args);
+            }
+
+            // Загрузка директории
+            if (expr['fn'] == 'lsd') {
+                //return loaddir();
             }
     
             if (expr['fn'] == 'strlen') {
                 return evalExpr(item, expr['args'][0]).length;
+            }
+
+            if (expr['fn'] == 'contains') {
+                let str = evalExpr(item, expr['args'][0]);
+                let val = evalExpr(item, expr['args'][1]);
+                return str.indexOf(val) >= 0;
+            }
+
+            if (expr['fn'] == 'starts_with') {
+                let str = evalExpr(item, expr['args'][0]);
+                let val = evalExpr(item, expr['args'][1]);
+                return str.startsWith(val);
+            }
+
+            if (expr['fn'] == 'ends_with') {
+                let str = evalExpr(item, expr['args'][0]);
+                let val = evalExpr(item, expr['args'][1]);
+                return str.endsWith(val);
             }
     
             if (k['fn'] == 'date') {
@@ -57,6 +94,9 @@ function evalExpr(item, expr) {
 
             return false;
         }
+        if (op == 'NOT') {
+            return !evalExpr(item, expr['first']);
+        }    
         if (op == 'OR') {
             return evalExpr(item, expr['first']) || evalExpr(item, expr['second']);
         }
@@ -85,10 +125,12 @@ function evalExpr(item, expr) {
             return evalExpr(item, expr['first']) && evalExpr(item, expr['second']);
         }    
         if (op == 'LIKE') {
-            return strpos(evalExpr(item, expr['first']), evalExpr(item, expr['second'])) !== false;
+            let str = evalExpr(item, expr['first'])
+            return str.indexOf(evalExpr(item, expr['second'])) >= 0;
         }
         if (op == 'NOT-LIKE') {
-            return strpos(evalExpr(item, expr['first']), evalExpr(item, expr['second'])) === false;
+            let str = evalExpr(item, expr['first'])
+            return str.indexOf(evalExpr(item, expr['second'])) < 0;
         }
         if ((op == '<>' || op == '!=')) {
             return evalExpr(item, expr['first']) != evalExpr(item, expr['second']);
@@ -183,31 +225,19 @@ function isAggregate(keys) {
     return false;
 }
 
-export function evalSQL(ast, fn, config) {
-    let group = false, table = [];
-    if (ast.hasOwnProperty('from')) {
-        table = fn.call(null, ast['from']['table'], config);
-    } else {
-        // table = json_decode(stream_get_contents(fopen('php://stdin', 'r')), true);
-        /* const process = require("process")
-        process.stdin.on('data', data => {
-            console.log(data.toString())
-        })
-        */
-    }
-
+function evalData(ast, table, config) {
     if (table == null) {
         throw new Error('No data');
     }
 
     if (ast.hasOwnProperty('json')) {
-        let tableA = fn.call(null, ast['join']['table'], config);
+        let tableA = loadJSON(ast['join']['table'], config);
 
         let key = ast['using'];
         let result = [];
         for(let item of table) {
             for(let itemA of tableA) {
-                if (isset(item[key]) && isset(itemA[key]) && (item[key] == itemA[key])) {
+                if (item.hasOwnProperty(key) && itemA.hasOwnProperty(key) && (item[key] == itemA[key])) {
                     result.push(array_merge(item, itemA));
                 }
             }
@@ -217,7 +247,9 @@ export function evalSQL(ast, fn, config) {
 
     if (ast.hasOwnProperty('where')) {
         let result = [];
-        for(let item of table) {
+        for(let n = 0; n < table.length; n++) {
+            state.index = n + 1;
+            let item = table[n];
             if (evalExpr(item, ast['where'])) {
                 result.push(item);
             }
@@ -256,16 +288,17 @@ export function evalSQL(ast, fn, config) {
             }
             result = [row];
         } else {
-            for(let n in table) {
+            for(let n = 0; n < table.length; n++) {
                 let row = table[n];
-                let item = [];
+                let item = {};
+                state.index = n + 1;
                 for(let j in keys) {
                     let key = keys[j];
                     let k = key['input'];
                     let out = key['output'] ? key['output'] : key['input'];
                     if (isObject(k)) {
                         out = key['output'] ? key['output'] : 'out' + j;
-                        item[out] = evalAgg(isset(row['_group_']) ? row['_group_'] : row, k);
+                        item[out] = evalAgg(row.hasOwnProperty('_group_') ? row['_group_'] : row, k);
                     } else if (k == '*') {
                         item = Object.assign({}, item, row);
                         delete item['_group_'];
@@ -280,4 +313,23 @@ export function evalSQL(ast, fn, config) {
     }
 
     return table;
+}
+
+export function evalSQL(ast, config) {
+    return new Promise((resolve, reject) => {
+        let group = false, table = [];
+        if (ast.hasOwnProperty('from')) {
+            if (isObject(ast['from']['table'])) {
+                table = evalExpr({}, ast['from']['table']);   
+            } else {
+                table = loadJSON(ast['from']['table'], config);
+            }
+            resolve(evalData(ast, table, config));
+        } else {
+            process.stdin.on('data', data => {
+                let table = JSON.parse(data);
+                resolve(evalData(ast, table, config));
+            });
+        }
+    });
 }

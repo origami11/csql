@@ -53,12 +53,12 @@ export class SQLParser {
     }
 
     parseArg() {
-        let input = this.parseExpr();
+        let input = this.parseExpr(), alias = null;
         if (this.ifTok('AS')) {
-            return {'input': input, 'output': this.parseId()};
+            alias = this.parseId();
         }
 
-        return {'input': input, 'output': null};
+        return {'input': input, 'output': alias};
     }
 
     parseVal() {
@@ -74,15 +74,17 @@ export class SQLParser {
         }
 
         let tok = this.getTok();
-        this.nextTok();
+        if (this.isId(tok)) {
+            this.nextTok();
         
-        if (this.isId(tok) && this.ifTok('(')) {
-            let args = this.parseExprList(); 
-            this.reqTok(')');
-            return {'op': 'call', 'fn': tok, 'args': args};
-        }
-        
-        return tok;
+            if (this.ifTok('(')) {
+                let args = this.parseExprList(); 
+                this.reqTok(')');
+                return {'op': 'call', 'fn': tok, 'args': args};
+            }
+            return tok;
+        }        
+        return null;
     }
 
     parseSQLArgs() {
@@ -95,16 +97,27 @@ export class SQLParser {
     }
 
     parseExprList() {
-        let args = [ this.parseExpr() ];
+        let args = [ ];
+        let first = this.parseExpr()
+        if (first) {
+            args.push(first);
+            while(this.ifTok(',')) {
+                args.push(this.parseExpr());
+            }           
+        }         
+        return args;        
+    }
 
-        while(this.ifTok(',')) {
-            args.push(this.parseExpr());
-        }                    
-        return args;
+    parseUnary() {            
+        if (this.ifTok('NOT')) {
+            return {'op': 'NOT', 'first': this.parseUnary()};
+        }
+        let r = this.parseVal()
+        return r;
     }
 
     parseTerm() {    
-        let first = this.parseVal(), op;
+        let first = this.parseUnary(), op;
         if (this.ifTok('IN')) {
             this.reqTok('('); 
             let args = this.parseExprList(); 
@@ -147,28 +160,44 @@ export class SQLParser {
     }
 
     parseExpr() {
-        return this.parseMul();
+        return this.parseBool();
     }
 
     parseSQL() {
         let ast = {};
-        if (this.ifTok('SELECT')) {
-            ast['select'] = this.parseSQLArgs();
+        // Опциональный select
+        if (this.ifTok('SELECT')) { }
+        
+        ast['select'] = this.parseSQLArgs();
 
-            if (this.ifTok('FROM')) {
-                ast['from'] = {'table': this.parseId()};
+        if (this.ifTok('FROM')) {
+            let tok = this.parseId(), expr, alias = null;
+            
+            if (this.ifTok('(')) {
+                let args = this.parseExprList(); 
+                this.reqTok(')');
+                expr = {'op': 'call', 'fn': tok, 'args': args};
+            } else {
+                expr = tok;
             }
 
-            if (this.ifTok('JOIN')) {
-                ast['join'] = {'table': this.parseId()};
-
-                if (this.ifTok('USING')) {
-                    ast['using'] = this.parseId();
-                } else {
-                    throw new Exception('Expected token USING ');
-                }
+            if (this.ifTok('AS')) {
+                alias = this.parseId();
             }
-        } 
+                        
+            ast['from'] = {'table': expr, 'as': alias};
+        }
+
+        if (this.ifTok('JOIN')) {
+            ast['join'] = {'table': this.parseId()};
+
+            if (this.ifTok('USING')) {
+                ast['using'] = this.parseId();
+            } else {
+                throw new Exception('Expected token USING ');
+            }
+        }
+         
         
         if (this.ifTok('WHERE')) {
             ast['where'] = this.parseBool();
