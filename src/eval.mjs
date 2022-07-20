@@ -100,8 +100,8 @@ function evalExpr(item, expr) {
                 return str.endsWith(val);
             }
     
-            if (k['fn'] == 'date') {
-                let d = new Date(evalExpr(item, k['args'][0]) * 1000);
+            if (expr['fn'] == 'date') {
+                let d = new Date(evalExpr(item, expr['args'][0]) * 1000);
                 return d.toLocaleDateString();
             }
 
@@ -281,7 +281,7 @@ function evalData(ast, table, config) {
     }
 
     if (ast.hasOwnProperty('limit')) {
-        table = table.splice(0, intval(ast['limit']['count']));
+        table = table.splice(0, parseInt(ast['limit']['count'], 10));
     }
 
     if (ast.hasOwnProperty('select')) {
