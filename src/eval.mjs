@@ -1,4 +1,5 @@
-import { loadcsv, loadJSON, klawSync } from './files.mjs';
+import { loadCSV, parseCSV, loadJSON, klawSync } from './files.mjs';
+import { getArg } from './args.mjs';
 import * as process from "process";
 
 function isNumber(s) {
@@ -68,7 +69,7 @@ function evalExpr(item, expr) {
             // Загрузка csv
             if (expr['fn'] == 'csv') {
                 let args = expr['args'].map(arg => evalExpr(item, arg));            
-                return loadcsv.apply(null, args);
+                return loadCSV.apply(null, args);
             }
 
             // Загрузка директории
@@ -340,8 +341,19 @@ export function evalSQL(ast, config) {
             }
             resolve(evalData(ast, table, config));
         } else {
+            let buff = '';
             process.stdin.on('data', data => {
-                let table = JSON.parse(data);
+                buff += data;
+            }).on('end', () => {
+                //console.log(buff);
+                let input = getArg(config, '-i');
+                let table;
+                if (input == 'csv') {
+                    table = parseCSV(buff.split("\n"), getArg(config, '-s', ';'), getArg(config, '-h')); 
+                } else {
+                    table = JSON.parse(buff);
+                } 
+                
                 resolve(evalData(ast, table, config));
             });
         }

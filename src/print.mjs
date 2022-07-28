@@ -7,7 +7,6 @@ export function printTable(arr) {
 
     let pt = new PrettyTable();
     pt.fromJson(arr);
-    
     pt.print();
 }
 

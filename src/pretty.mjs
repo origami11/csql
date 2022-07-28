@@ -22,7 +22,7 @@ export class PrettyTable {
     addRow (row) {
         this.table.rows.push(row);
         for (var i = 0; i < row.length; i++) {
-            if (row[i].toString().length > this.table.maxWidth[i]) {
+            if (row[i] && row[i].toString().length > this.table.maxWidth[i]) {
                 this.table.maxWidth[i] = row[i].toString().length;
             }
         }
@@ -79,9 +79,11 @@ export class PrettyTable {
             var tempRowString = '| ';
             for (var k = 0; k < this.table.rows[i].length; k++) {
                 tempRowString += this.table.rows[i][k];
+                let value = this.table.rows[i][k];
+                let item =  value === null || value == undefined ? '' : this.table.rows[i][k];
                 // Adjust max width of each cell and pad spaces as necessary
-                if (this.table.rows[i][k].toString().length < this.table.maxWidth[k]) {
-                    lengthDifference = this.table.maxWidth[k] - this.table.rows[i][k].toString().length;
+                if (item.toString().length < this.table.maxWidth[k]) {
+                    lengthDifference = this.table.maxWidth[k] - item.toString().length;
                     tempRowString += Array(lengthDifference + 1).join(' ');
                 }
                 tempRowString += ' | ';

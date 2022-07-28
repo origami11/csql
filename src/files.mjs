@@ -1,12 +1,15 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-export function loadcsv(path, sep = ";") {
-    let data = fs.readFileSync(path, 'utf-8').split("\n");
-    let result = [];
-    let first = data.shift();
-    first = first.split(sep);
-
+export function parseCSV(data, sep, header = false) {
+    let result = [], first;
+    if (header) {
+        first = header.split(',');
+    } else {
+        let header = data.shift();
+        first = header.split(sep);
+    }
+    
     for(let row of data) {
         let item = row.split(sep);
         let value = {};
@@ -17,6 +20,11 @@ export function loadcsv(path, sep = ";") {
     }
 
     return result;
+}
+
+export function loadCSV(path, sep = ";") {
+    let data = fs.readFileSync(path, 'utf-8').split("\n");
+    return parseCSV(data, sep, false);
 }
 
 export function loadJSON(name, config) {
