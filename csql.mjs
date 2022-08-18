@@ -16,7 +16,7 @@ let opt = parseArgs(process.argv.slice(2));
 let arg = {
     "s": 'csv separator',
     "h": 'csv header',
-    "o": 'output format "csv" or "json", default "table"',
+    "o": 'output format "csv" or "json" or "table", default "table"',
     "i": 'input format "csv" or "json", default "json"'
 };
 
