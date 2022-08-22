@@ -10,6 +10,11 @@
     "type": "git",
     "url": "https://github.com/origami11/csql.git"
   },
+  "type": "module",
+  "bin": {
+      "csql": "./bin/csql.mjs"
+  },
+  "main": "./index.mjs",
   "author": "origami11@yandex.ru",
   "license": "ISC"
 }

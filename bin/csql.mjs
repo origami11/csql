@@ -1,10 +1,10 @@
-#!/usr/bin/node
+#!/usr/bin/env node
 
 import * as fs from "fs";
-import { parseSQL, SQLParser } from "./src/parse.mjs";
-import { evalSQL } from "./src/eval.mjs";
-import { parseArgs, getArg } from "./src/args.mjs";
-import { printCSV, printJSON, printTable } from "./src/print.mjs";
+import { parseSQL, SQLParser } from "../src/parse.mjs";
+import { evalSQL } from "../src/eval.mjs";
+import { parseArgs, getArg } from "../src/args.mjs";
+import { printCSV, printJSON, printTable } from "../src/print.mjs";
 
 function executeSQL(s, config) {
     let ast = parseSQL(s);
