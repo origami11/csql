@@ -32,19 +32,18 @@ function select(fn, arr) {
 }
 
 function orderBy(arr, key, dir) {
+    function compare (a, b) {
+        if (typeof b[key] == 'number' && typeof a[key] == 'number') {
+            return b[key] - a[key];
+        }
+        return b[key].toString().localeCompare(a[key]);
+    }
+    
     if (dir == 'ASC') {
-        arr.sort(function (a, b) {
-            if (typeof b[key] == 'number' && typeof a[key] == 'number') {
-                return b[key] - a[key];
-            }
-            return b[key].toString().localeCompare(a[key]);
-        });
+        arr.sort(compare);
     } else {
         arr.sort(function (a, b) {
-            if (typeof b[key] == 'number' && typeof a[key] == 'number') {
-                return a[key] - b[key];
-            }
-            return a[key].toString().localeCompare(b[key]);
+            return compare(b, a);
         });
     }
     return arr;
@@ -70,6 +69,11 @@ function evalExpr(item, expr) {
             if (expr['fn'] == 'csv') {
                 let args = expr['args'].map(arg => evalExpr(item, arg));            
                 return loadCSV.apply(null, args);
+            }
+
+            if (expr['fn'] == 'json') {
+                let args = expr['args'].map(arg => evalExpr(item, arg));            
+                return loadJSON.apply(null, args);
             }
 
             // Загрузка директории
@@ -199,17 +203,17 @@ function evalAgg(data, k) {
             return data.length;
         }
         if (k['fn'] == 'MAX') {
-            val = evalExpr(data[0], k['args'][0]);
+            let val = evalExpr(data[0], k['args'][0]);
             for(let i = 1; i < data.length; i++) {
-                val = max(val, evalExpr(data[i], k['args'][0]));
+                val = Math.max(val, evalExpr(data[i], k['args'][0]));
             }
     
             return val;
         }
         if (k['fn'] == 'MIN') {
-            val = evalExpr(data[0], k['args'][0]);
+            let val = evalExpr(data[0], k['args'][0]);
             for(let i = 1; i < data.length; i++) {
-                val = min(val, evalExpr(data[i], k['args'][0]));
+                val = Math.min(val, evalExpr(data[i], k['args'][0]));
             }
     
             return val;
@@ -245,15 +249,15 @@ function evalData(ast, table, config) {
         throw new Error('No data');
     }
 
-    if (ast.hasOwnProperty('json')) {
+    if (ast.hasOwnProperty('join')) {
         let tableA = loadJSON(ast['join']['table'], config);
 
-        let key = ast['using'];
+        let key = ast['join']['using'];
         let result = [];
         for(let item of table) {
             for(let itemA of tableA) {
                 if (item.hasOwnProperty(key) && itemA.hasOwnProperty(key) && (item[key] == itemA[key])) {
-                    result.push(array_merge(item, itemA));
+                    result.push(Object.assign({}, item, itemA));
                 }
             }
         }

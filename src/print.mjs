@@ -7,7 +7,7 @@ export function printTable(arr) {
 
     let pt = new PrettyTable();
     pt.fromJson(arr);
-    pt.print();
+    return pt.toString();
 }
 
 export function printCSV(arr, sep = ';') {
@@ -23,12 +23,14 @@ export function printCSV(arr, sep = ';') {
     arr.unshift(first);
 
     let values = arr;
+    let result = [];
     for(let i in values) {
         let item = values[i];
-        console.log(Object.values(item).join(sep));
+        result.push(Object.values(item).join(sep));
     }
+    return result.join('\n');
 }
 
 export function printJSON(arr) {
-    console.log(JSON.stringify(arr, 0, 2));
+    return JSON.stringify(arr, 0, 2);
 }

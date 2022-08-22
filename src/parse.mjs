@@ -192,7 +192,7 @@ export class SQLParser {
             ast['join'] = {'table': this.parseId()};
 
             if (this.ifTok('USING')) {
-                ast['using'] = this.parseId();
+                ast['join']['using'] = this.parseId();
             } else {
                 throw new Exception('Expected token USING ');
             }

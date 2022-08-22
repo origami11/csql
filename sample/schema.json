@@ -1,0 +1,23 @@
+{
+  "name": "Name",
+  "mass": "Mass (10^24kg)",
+  "diameter": "Diameter (km)",
+  "density": "Density (kg/m^3)",
+  "gravity": "Gravity (m/s^2)",
+  "velocity": "Escape Velocity (km/s)",
+  "period": "Rotation Period (hours)",
+  "day": "Length of Day (hours)",
+  "distance": "Distance from Sun (10^6 km)",
+  "perihelion": "Perihelion (10^6 km)",
+  "aphelion": "Aphelion (10^6 km)",
+  "orbital": "Orbital Period (days)",
+  "orbital_velocity": "Orbital Velocity (km/s)",
+  "inclination": "Orbital Inclination (degrees)",
+  "eccentricity": "Orbital Eccentricity",
+  "obliquity": "Obliquity to Orbit (degrees)",
+  "temperature": "Mean Temperature (C)",
+  "pressure": "Surface Pressure (bars)",
+  "moons": "Number of Moons",
+  "rings": "Ring System?",
+  "magnetic_field ": "Global Magnetic Field?"
+}

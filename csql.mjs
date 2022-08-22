@@ -16,29 +16,45 @@ let opt = parseArgs(process.argv.slice(2));
 let arg = {
     "s": 'csv separator',
     "h": 'csv header',
-    "o": 'output format "csv" or "json" or "table", default "table"',
-    "i": 'input format "csv" or "json", default "json"'
+    "f": 'output format "csv", "json", "table" (default "table")',
+    "o": 'output file',
+    "i": 'input format "csv","json" (default "json")'
 };
 
-if (getArg(opt, '-ast')) {
+let sql = getArg(opt, '_');
+
+if (!sql) {
+    for(let a in arg) {
+        console.log(`  -${a} ${arg[a]}`);
+    }
+
+} else if (getArg(opt, '-ast')) {
     let p = new SQLParser();
-    let tok = p.tokenizeSQL(getArg(opt, '_'));
+    let tok = p.tokenizeSQL(sql);
     console.log('TOKENS', tok);
 
-    let ast = parseSQL(query);
+    let ast = parseSQL(sql);
     console.log('AST', JSON.stringify(ast, null, 2));
 } else {
-    let result = executeSQL(getArg(opt, '_'), opt);
+    let result = executeSQL(sql, opt);
     
     result.then((data) => {   
+        let fmt = getArg(opt, '-f');
         let out = getArg(opt, '-o');
-        if (out == 'csv') {
-            printCSV(data);
-        } else if (out == 'json') {
-            printJSON(data);
+        let result;
+        if (fmt == 'csv') {
+            result = printCSV(data);
+        } else if (fmt == 'json') {
+            result = printJSON(data);
         } else {
     //        console.log('Terminal size: ' + process.stdout.columns + 'x' + process.stdout.rows);
-            printTable(data);
+            result = printTable(data);
+        }
+        
+        if (out) {
+            fs.writeFileSync(out, result);
+        } else {
+            console.log(result);
         }
     });
 }
