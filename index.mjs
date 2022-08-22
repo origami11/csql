@@ -1,8 +1,8 @@
 
-import { parseSQL, SQLParser } from "./src/parse.mjs";
+import { parseSQL } from "./src/parse.mjs";
 import { evalSQL } from "./src/eval.mjs";
 
-export const parseSQL = parseSQL;
+export { parseSQL } from "./src/parse.mjs";
 
 export function executeSQL(s, config) {
     let ast = parseSQL(s);

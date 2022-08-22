@@ -1,4 +1,3 @@
-
 export class SQLParser {
     pos = 0;
 
@@ -116,7 +115,7 @@ export class SQLParser {
         return r;
     }
 
-    parseTerm() {    
+    parseFactor() {    
         let first = this.parseUnary(), op;
         if (this.ifTok('IN')) {
             this.reqTok('('); 
@@ -126,37 +125,37 @@ export class SQLParser {
             return {'op': 'IN', 'first': first, 'list': args};
         } else if (this.ifTok('NOT')) {
             if (this.ifTok('LIKE')) {
-                return {'op': 'NOT-LIKE', 'first': first, 'second': this.parseTerm()};
+                return {'op': 'NOT-LIKE', 'first': first, 'second': this.parseFactor()};
             }
             throw new Exception("Expected LIKE");
         } else if (op = this.ifTok(['>=', '<=', '>', '<', '<>' , '!=', '=', '~=', 'LIKE'])) {
-            return {'op': op, 'first': first, 'second': this.parseTerm()};
+            return {'op': op, 'first': first, 'second': this.parseFactor()};
         }
         return first;
     }
 
     parseMul() {
-        let first = this.parseTerm(), op;        
-        if (op = this.ifTok(['*', '/'])) {
-            return {'op': op, 'first': first, 'second': this.parseMul()};
+        let result = this.parseFactor(), op;        
+        while (op = this.ifTok(['*', '/'])) {
+            result = {'op': op, 'first': result, 'second': this.parseFactor()};
         }
-        return first;
+        return result;
     }
 
     parseSum() {
-        let first = this.parseMul(), op;                
-        if (op = this.ifTok(['+', '-'])) {
-            return {'op': op, 'first': first, 'second': this.parseSum()};
+        let result = this.parseMul(), op;                
+        while (op = this.ifTok(['+', '-'])) {
+            result = {'op': op, 'first': result, 'second': this.parseMul()};
         }
-        return first;
+        return result;
     }
 
     parseBool() {
-        let first = this.parseSum(), op;
-        if (op = this.ifTok(['AND', 'OR'])) {
-            return {'op': op, 'first': first, 'second': this.parseBool()};
+        let result = this.parseSum(), op;
+        while (op = this.ifTok(['AND', 'OR'])) {
+            result = {'op': op, 'first': result, 'second': this.parseSum()};
         }
-        return first;
+        return result;
     }
 
     parseExpr() {
