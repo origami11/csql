@@ -6,9 +6,19 @@ import { evalSQL } from "../src/eval.mjs";
 import { parseArgs, getArg } from "../src/args.mjs";
 import { printCSV, printJSON, printTable } from "../src/print.mjs";
 
-function executeSQL(s, config) {
-    let ast = parseSQL(s);
-    return evalSQL(ast, config);
+function executeSQL(sql, config) {
+    let ast = sql.map(s => parseSQL(s));
+
+    function loop(n, result) {
+        if (n < ast.length) {
+            return evalSQL(ast[n], config, result).then((data) => {
+                return loop(n + 1, data);
+            });
+        }
+        return result;
+    }
+    
+    return loop(0, null);
 }
 
 let opt = parseArgs(process.argv.slice(2));
@@ -18,16 +28,26 @@ let arg = {
     "h": 'csv header',
     "f": 'output format "csv", "json", "table" (default "table")',
     "o": 'output file',
-    "i": 'input format "csv","json" (default "json")'
+    "i": 'input format "csv","json" (default "json")',
+/*    
+    // Кеширование запросов в alias
+    "cache": '',
+    "clear": '',
+    "update": '',
+    // Виртуальные таблицы
+    "remove": '',
+    "alias": '',
+    "add": '',
+    "remove": '',
+*/
 };
 
 let sql = getArg(opt, '_');
 
-if (!sql) {
+if (sql.length == 0) {
     for(let a in arg) {
         console.log(`  -${a} ${arg[a]}`);
     }
-
 } else if (getArg(opt, '-ast')) {
     let p = new SQLParser();
     let tok = p.tokenizeSQL(sql);

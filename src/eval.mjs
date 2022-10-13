@@ -334,7 +334,7 @@ function evalData(ast, table, config) {
     return table;
 }
 
-export function evalSQL(ast, config) {
+export function evalSQL(ast, config, data) {
     return new Promise((resolve, reject) => {
         if (ast.hasOwnProperty('from')) {
             let table = [];
@@ -344,6 +344,8 @@ export function evalSQL(ast, config) {
                 table = loadJSON(ast['from']['table'], config);
             }
             resolve(evalData(ast, table, config));
+        } else if (data) {
+            resolve(evalData(ast, data, config));
         } else {
             let buff = '';
             process.stdin.on('data', data => {

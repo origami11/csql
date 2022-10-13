@@ -6,7 +6,7 @@ export function getArg(opt, key, def = null) {
 }
 
 export function parseArgs(args) {
-    let options = {};
+    let options = {'_': []};
     let key = false;
     for(let arg of args) {
         if (arg.charAt(0) == '-') {
@@ -16,7 +16,7 @@ export function parseArgs(args) {
             options[key] = arg;
             key = false;
         } else {
-            options['_'] = arg;
+            options['_'].push(arg);
         }
     }
     return options;
