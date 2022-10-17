@@ -2,7 +2,7 @@ export class SQLParser {
     pos = 0;
 
     tokenizeSQL(s) {
-        let tokens = s.match(new RegExp("[A-Za-z][\\w_]*|(?<Number>\\d+(\\.\\d*)?)|\\*|\\+|-|\\/|!=|~=|=|<>|,|>=|<=|>|<|\\(|\\)|\\'[^\\']*\\'", 'g'));
+        let tokens = s.match(new RegExp("[A-Za-z][\\w_]*|(?<Number>\\d+(\\.\\d*)?)|\\*|\\+|-|\\/|!=|~=|=|<>|,|\\.|>=|<=|>|<|\\(|\\)|\\'[^\\']*\\'", 'g'));
         return tokens;
     }
 
@@ -39,7 +39,11 @@ export class SQLParser {
     }
 
     isId(tok) {
-        return tok.match(/^\w+/);
+        return typeof tok == 'string' && tok.match(/^\w+/);
+    }
+
+    isVar(obj) {
+        return obj.op == 'prop';
     }
 
     parseId() {
@@ -58,6 +62,21 @@ export class SQLParser {
         }
 
         return {'input': input, 'output': alias};
+    }    
+
+    parseVar(tok) {
+        if (this.ifTok('.') && this.isId(tok)) {
+            let access = {op: 'prop', names: [tok]};
+            
+            do {
+                tok = this.parseId();
+                access.names.push(tok);
+            } while(this.ifTok('.'));
+            
+            return access;
+        }
+
+        return tok;
     }
 
     parseVal() {
@@ -74,14 +93,16 @@ export class SQLParser {
 
         let tok = this.getTok();
         if (tok != ')') {
-            this.nextTok();
+            this.nextTok();           
+            let result = this.parseVar(tok);
         
-            if (this.isId(tok) && this.ifTok('(')) {
+            if ((this.isVar(result) || this.isId(result)) && this.ifTok('(')) {
                 let args = this.parseExprList();                 
                 this.reqTok(')');
                 return {'op': 'call', 'fn': tok, 'args': args};
             }
-            return tok;
+            
+            return result;
         }        
         return null;
     }
@@ -184,11 +205,17 @@ export class SQLParser {
                 alias = this.parseId();
             }
                         
-            ast['from'] = {'table': expr, 'as': alias};
+            ast['from'] = {'table': expr, 'alias': alias};
         }
 
         if (this.ifTok('JOIN')) {
-            ast['join'] = {'table': this.parseId()};
+
+            let tok = this.parseId(), alias = null;
+            if (this.ifTok('AS')) {
+                alias = this.parseId();
+            }
+        
+            ast['join'] = {'table': tok, 'alias': alias};
 
             if (this.ifTok('USING')) {
                 ast['join']['using'] = this.parseId();

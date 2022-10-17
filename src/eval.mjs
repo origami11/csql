@@ -2,6 +2,17 @@ import { loadCSV, parseCSV, loadJSON, klawSync } from './files.mjs';
 import { getArg } from './args.mjs';
 import * as process from "process";
 
+
+// Описание таблицы 
+class Table {
+    // Данные
+    data = [];
+    // Альтернативные названия
+    info = {
+        alias: {}
+    };
+}
+
 function isNumber(s) {
     return s.match(/^\d+(\.\d+)?$/);
 }
@@ -15,7 +26,7 @@ let state = {index: 0}
 ﻿function groupBy(arr, key) {
     let result = [];
     for(let item of arr) {
-        let name = item[key];
+        let name = item[key]; // getItem
         if (!result.hasOwnProperty(name)) {
             result[name] = {'_group_': []};
             result[name][key] = name;
@@ -49,7 +60,7 @@ function orderBy(arr, key, dir) {
     return arr;
 }
 
-function evalExpr(item, expr) {
+function evalExpr(item, expr, info) {
     if (isObject(expr)) {
         let op = expr['op'];
         if (op == 'call') {
@@ -57,116 +68,134 @@ function evalExpr(item, expr) {
                 return state.index;
             }
             if (expr['fn'] == 'trim') {
-                return evalExpr(item, expr['args'][0]).trim();
+                return evalExpr(item, expr['args'][0], info).trim();
             }
 
             if (expr['fn'] == 'concat') {
-                let args = expr['args'].map(arg => evalExpr(item, arg));            
+                let args = expr['args'].map(arg => evalExpr(item, arg, info));
                 return args.join('');
             }
 
             // Загрузка csv
             if (expr['fn'] == 'csv') {
-                let args = expr['args'].map(arg => evalExpr(item, arg));            
+                let args = expr['args'].map(arg => evalExpr(item, arg, info));
                 return loadCSV.apply(null, args);
             }
 
             if (expr['fn'] == 'json') {
-                let args = expr['args'].map(arg => evalExpr(item, arg));            
+                let args = expr['args'].map(arg => evalExpr(item, arg, info));            
                 return loadJSON.apply(null, args);
             }
 
             // Загрузка директории
             if (expr['fn'] == 'files') {
-                let args = expr['args'].map(arg => evalExpr(item, arg));
+                let args = expr['args'].map(arg => evalExpr(item, arg, info));
                 let result = klawSync(args[0], { nodir: true });
                 return result;
             }
     
             if (expr['fn'] == 'strlen') {
-                return evalExpr(item, expr['args'][0]).length;
+                return evalExpr(item, expr['args'][0], info).length;
             }
 
             if (expr['fn'] == 'contains') {
-                let str = evalExpr(item, expr['args'][0]);
-                let val = evalExpr(item, expr['args'][1]);
+                let str = evalExpr(item, expr['args'][0], info);
+                let val = evalExpr(item, expr['args'][1], info);
                 return str.indexOf(val) >= 0;
             }
 
             if (expr['fn'] == 'starts_with') {
-                let str = evalExpr(item, expr['args'][0]);
-                let val = evalExpr(item, expr['args'][1]);
+                let str = evalExpr(item, expr['args'][0], info);
+                let val = evalExpr(item, expr['args'][1], info);
                 return str.startsWith(val);
             }
 
             if (expr['fn'] == 'ends_with') {
-                let str = evalExpr(item, expr['args'][0]);
-                let val = evalExpr(item, expr['args'][1]);
+                let str = evalExpr(item, expr['args'][0], info);
+                let val = evalExpr(item, expr['args'][1], info);
                 return str.endsWith(val);
             }
     
             if (expr['fn'] == 'date') {
-                let d = new Date(evalExpr(item, expr['args'][0]) * 1000);
+                let d = new Date(evalExpr(item, expr['args'][0], info) * 1000);
                 return d.toLocaleDateString();
             }
 
             return false;
         }
         if (op == 'NOT') {
-            return !evalExpr(item, expr['first']);
+            return !evalExpr(item, expr['first'], info);
         }    
         if (op == 'OR') {
-            return evalExpr(item, expr['first']) || evalExpr(item, expr['second']);
+            return evalExpr(item, expr['first'], info) || evalExpr(item, expr['second'], info);
         }
         if (op == '+') {
-            return evalExpr(item, expr['first']) + evalExpr(item, expr['second']);
+            return evalExpr(item, expr['first'], info) + evalExpr(item, expr['second'], info);
         }
         if (op == '-') {
-            return evalExpr(item, expr['first']) - evalExpr(item, expr['second']);
+            return evalExpr(item, expr['first'], info) - evalExpr(item, expr['second'], info);
         }
         if (op == '*') {
-            return evalExpr(item, expr['first']) * evalExpr(item, expr['second']);
+            return evalExpr(item, expr['first'], info) * evalExpr(item, expr['second'], info);
         }
         if (op == '/') {
-            return evalExpr(item, expr['first']) / evalExpr(item, expr['second']);
+            return evalExpr(item, expr['first'], info) / evalExpr(item, expr['second'], info);
         }
         if (op == 'IN') {
-            let v = evalExpr(item, expr['first']);
+            let v = evalExpr(item, expr['first'], info);
             for(let data of expr['list']) {
-                if (v == evalExpr(item, data)) {
+                if (v == evalExpr(item, data, info)) {
                     return true;
                 }
             }
             return false;
         }
         if (op == 'AND') {
-            return evalExpr(item, expr['first']) && evalExpr(item, expr['second']);
+            return evalExpr(item, expr['first'], info) && evalExpr(item, expr['second'], info);
         }    
         if (op == 'LIKE') {
             let str = evalExpr(item, expr['first'])
-            return str.indexOf(evalExpr(item, expr['second'])) >= 0;
+            return str.indexOf(evalExpr(item, expr['second'], info)) >= 0;
         }
         if (op == 'NOT-LIKE') {
             let str = evalExpr(item, expr['first'])
-            return str.indexOf(evalExpr(item, expr['second'])) < 0;
+            return str.indexOf(evalExpr(item, expr['second'], info)) < 0;
         }
         if ((op == '<>' || op == '!=')) {
-            return evalExpr(item, expr['first']) != evalExpr(item, expr['second']);
+            return evalExpr(item, expr['first'], info) != evalExpr(item, expr['second'], info);
         }
         if (op == '=') {       
-            return evalExpr(item, expr['first']) == evalExpr(item, expr['second']);
+            return evalExpr(item, expr['first'], info) == evalExpr(item, expr['second'], info);
         }
         if (op == '>') {
-            return evalExpr(item, expr['first']) > evalExpr(item, expr['second']);
+            return evalExpr(item, expr['first'], info) > evalExpr(item, expr['second'], info);
         }
         if (op == '>=') {
-            return evalExpr(item, expr['first']) >= evalExpr(item, expr['second']);
+            return evalExpr(item, expr['first'], info) >= evalExpr(item, expr['second'], info);
         }
         if (op == '<') {
-            return evalExpr(item, expr['first']) < evalExpr(item, expr['second']);
+            return evalExpr(item, expr['first'], info) < evalExpr(item, expr['second'], info);
         }
         if (op == '~=') {
-            return strpos(evalExpr(item, expr['first']), evalExpr(item, expr['second'])) !== false;
+            return strpos(evalExpr(item, expr['first'], info), evalExpr(item, expr['second'], info)) !== false;
+        }
+        if (op == 'prop') {
+            let key = expr['names'];
+            let value = item;
+            let first = key[0];
+            if (isAlias(info, first)) {
+                if (info.alias[first] === true) {
+                    value = item;
+                } else {
+                    value = item[info.alias[first]];
+                }
+            } else {
+                value = getItem(value, first);
+            }
+            for(let n = 1; n < key.length; n++) {
+                value = value[key[n]];
+            }            
+            return value;
         }
     }
 
@@ -185,17 +214,31 @@ function evalExpr(item, expr) {
         let s = expr.substring(1, expr.length-1);
         return s;
     }
-    return item[expr];
+    return getItem(item, expr);
 }
 
-function evalAgg(data, k) {
+function isAlias(table, name) {
+    return table.alias.hasOwnProperty(name);
+}
+
+function getItem(item, key) {
+    if (item.hasOwnProperty(key)) {
+        return item[key];
+    }
+    if (item.hasOwnProperty('$0')) {
+        return item['$0'][key];
+    }
+    throw new Error('undefined key' + key);
+}
+
+function evalAgg(data, k, info) {
     // AVG, MIN, MAX
     if (k['op'] == 'call' && ['COUNT', 'SUM', 'MIN', 'MAX', 'AVG'].includes(k['fn'])) {
         if (k['fn'] == 'IF') {
             if (evalExpr(data, k['args'][0])) {
-                return evalExpr(data, k['args'][1]);
+                return evalExpr(data, k['args'][1], info);
             } else {
-                return evalExpr(data, k['args'][2]);
+                return evalExpr(data, k['args'][2], info);
             }
             return 0;
         }
@@ -203,17 +246,17 @@ function evalAgg(data, k) {
             return data.length;
         }
         if (k['fn'] == 'MAX') {
-            let val = evalExpr(data[0], k['args'][0]);
+            let val = evalExpr(data[0], k['args'][0], info);
             for(let i = 1; i < data.length; i++) {
-                val = Math.max(val, evalExpr(data[i], k['args'][0]));
+                val = Math.max(val, evalExpr(data[i], k['args'][0], info));
             }
     
             return val;
         }
         if (k['fn'] == 'MIN') {
-            let val = evalExpr(data[0], k['args'][0]);
+            let val = evalExpr(data[0], k['args'][0], info);
             for(let i = 1; i < data.length; i++) {
-                val = Math.min(val, evalExpr(data[i], k['args'][0]));
+                val = Math.min(val, evalExpr(data[i], k['args'][0], info));
             }
     
             return val;
@@ -228,7 +271,7 @@ function evalAgg(data, k) {
         }
         throw new Exception('Not implemented ' + k['fn']);
     }
-    return evalExpr(data, k);
+    return evalExpr(data, k, info);
 }
 
 function isAggregate(keys) {
@@ -245,48 +288,54 @@ function isAggregate(keys) {
 
 function evalData(ast, table, config) {
     let group = false;
-    if (table == null) {
+    if (table.data == null) {
         throw new Error('No data');
     }
 
     if (ast.hasOwnProperty('join')) {
         let tableA = loadJSON(ast['join']['table'], config);
+            
+        table.info.alias[ast['join']['table']] = '$0';
+        if (ast['from']['alias']) {
+            table.info.alias[ast['join']['alias']] = '$0';
+        }
 
         let key = ast['join']['using'];
         let result = [];
-        for(let item of table) {
+        for(let item of table.data) {
             for(let itemA of tableA) {
                 if (item.hasOwnProperty(key) && itemA.hasOwnProperty(key) && (item[key] == itemA[key])) {
-                    result.push(Object.assign({}, item, itemA));
+                    item['$0'] = itemA;
+                    // result.push(Object.assign({}, item, itemA));
                 }
             }
         }
-        table = result;
+        table.data = result;
     }
 
     if (ast.hasOwnProperty('where')) {
         let result = [];
-        for(let n = 0; n < table.length; n++) {
+        for(let n = 0; n < table.data.length; n++) {
             state.index = n + 1;
-            let item = table[n];
-            if (evalExpr(item, ast['where'])) {
+            let item = table.data[n];
+            if (evalExpr(item, ast['where'], table.info)) {
                 result.push(item);
             }
         }
-        table = result;
+        table.data = result;
     }
 
     if (ast.hasOwnProperty('group')) {
         group = true;
-        table = groupBy(table, ast['group']['field']);
+        table.data = groupBy(table.data, ast['group']['field']);
     }
 
     if (ast.hasOwnProperty('order')) {
-        table = orderBy(table, ast['order']['field'], ast['order']['dir']);
+        table.data = orderBy(table.data, ast['order']['field'], ast['order']['dir']);
     }
 
     if (ast.hasOwnProperty('limit')) {
-        table = table.splice(0, parseInt(ast['limit']['count'], 10));
+        table.data = table.data.splice(0, parseInt(ast['limit']['count'], 10));
     }
 
     if (ast.hasOwnProperty('select')) {
@@ -302,13 +351,13 @@ function evalData(ast, table, config) {
                 let out = key['output'] ? key['output'] : key['input'];
                 if (isObject(k)) {
                     out = key['output'] ? key['output'] : 'out' + n;
-                    row[out] = evalAgg(table, k);
+                    row[out] = evalAgg(table, k, table.info);
                 }
             }
             result = [row];
         } else {
-            for(let n = 0; n < table.length; n++) {
-                let row = table[n];
+            for(let n = 0; n < table.data.length; n++) {
+                let row = table.data[n];
                 let item = {};
                 state.index = n + 1;
                 for(let j in keys) {
@@ -328,24 +377,30 @@ function evalData(ast, table, config) {
                 result[n] = item;
             }
         }
-        table = result;
+        table.data = result;
     }
 
-    return table;
+    return table.data;
 }
 
 export function evalSQL(ast, config, data) {
     return new Promise((resolve, reject) => {
         if (ast.hasOwnProperty('from')) {
-            let table = [];
+            let table = new Table();
             if (isObject(ast['from']['table'])) {
-                table = evalExpr({}, ast['from']['table']);   
+                table.data = evalExpr({}, ast['from']['table']);   
             } else {
-                table = loadJSON(ast['from']['table'], config);
+                table.data = loadJSON(ast['from']['table'], config);
+                table.info.alias[ast['from']['table']] = true;
+            }
+            if (ast['from']['alias']) {
+                table.info.alias[ast['from']['alias']] = true;
             }
             resolve(evalData(ast, table, config));
         } else if (data) {
-            resolve(evalData(ast, data, config));
+            let table = new Table();
+            table.data = data;
+            resolve(evalData(ast, table, config));
         } else {
             let buff = '';
             process.stdin.on('data', data => {
@@ -353,14 +408,14 @@ export function evalSQL(ast, config, data) {
             }).on('end', () => {
                 //console.log(buff);
                 let input = getArg(config, '-i');
-                let table;
+                let table = new Table();
                 if (input == 'csv') {
-                    table = parseCSV(buff.split("\n"), getArg(config, '-s', ';'), getArg(config, '-h')); 
+                    table.data = parseCSV(buff.split("\n"), getArg(config, '-s', ';'), getArg(config, '-h')); 
                 } else {
-                    table = JSON.parse(buff);
+                    table.data = JSON.parse(buff);
                 } 
                 
-                resolve(evalData(ast, table, config));
+                resolve (evalData(ast, table, config));
             });
         }
     });

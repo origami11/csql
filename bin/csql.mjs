@@ -50,10 +50,10 @@ if (sql.length == 0) {
     }
 } else if (getArg(opt, '-ast')) {
     let p = new SQLParser();
-    let tok = p.tokenizeSQL(sql);
+    let tok = p.tokenizeSQL(sql[0]);
     console.log('TOKENS', tok);
 
-    let ast = parseSQL(sql);
+    let ast = parseSQL(sql[0]);
     console.log('AST', JSON.stringify(ast, null, 2));
 } else {
     let result = executeSQL(sql, opt);
