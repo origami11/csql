@@ -301,7 +301,7 @@ function evalData(ast, table, config) {
         }
 
         let key = ast['join']['using'];
-        let result = [];
+        //let result = [];
         for(let item of table.data) {
             for(let itemA of tableA) {
                 if (item.hasOwnProperty(key) && itemA.hasOwnProperty(key) && (item[key] == itemA[key])) {
@@ -310,7 +310,7 @@ function evalData(ast, table, config) {
                 }
             }
         }
-        table.data = result;
+        //table.data = result;
     }
 
     if (ast.hasOwnProperty('where')) {
@@ -366,12 +366,12 @@ function evalData(ast, table, config) {
                     let out = key['output'] ? key['output'] : key['input'];
                     if (isObject(k)) {
                         out = key['output'] ? key['output'] : 'out' + j;
-                        item[out] = evalAgg(row.hasOwnProperty('_group_') ? row['_group_'] : row, k);
+                        item[out] = evalAgg(row.hasOwnProperty('_group_') ? row['_group_'] : row, k, table.info);
                     } else if (k == '*') {
                         item = Object.assign({}, item, row);
                         delete item['_group_'];
                     } else {
-                        item[out] = row[k];
+                        item[out] = getItem(row, k);
                     }
                 }
                 result[n] = item;
