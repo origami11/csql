@@ -7,14 +7,14 @@ export function getArg(opt, key, def = null) {
 
 export function parseArgs(args) {
     let options = {'_': []};
-    let key = false;
+    let key = null;
     for(let arg of args) {
         if (arg.charAt(0) == '-') {
             key = arg;
             options[key] = true;
         } else if (key) {
             options[key] = arg;
-            key = false;
+            key = null;
         } else {
             options['_'].push(arg);
         }

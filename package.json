@@ -2,9 +2,10 @@
   "name": "csql",
   "version": "1.0.0",
   "description": "Похожий на SQL язык для обработки json",
-  "main": "index.js",
+  "main": "./index.mjs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "watch": "tsc --build tsconfig.json --watch",
+    "build": "tsc --build tsconfig.json"
   },
   "repository": {
     "type": "git",
@@ -12,9 +13,11 @@
   },
   "type": "module",
   "bin": {
-      "csql": "./bin/csql.mjs"
+    "csql": "./bin/csql.mjs"
   },
-  "main": "./index.mjs",
   "author": "origami11@yandex.ru",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^18.11.0"
+  }
 }

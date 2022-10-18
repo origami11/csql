@@ -32,5 +32,5 @@ export function printCSV(arr, sep = ';') {
 }
 
 export function printJSON(arr) {
-    return JSON.stringify(arr, 0, 2);
+    return JSON.stringify(arr, null, 2);
 }

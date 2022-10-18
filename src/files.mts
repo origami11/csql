@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-export function parseCSV(data, sep, header = false) {
+export function parseCSV(data, sep, header = null) {
     let result = [], first;
     if (header) {
         first = header.split(',');
@@ -32,11 +32,21 @@ export function loadJSON(name, config) {
     if (!fs.existsSync(path)) {
         path = name + ".json";
     }
-    let result = JSON.parse(fs.readFileSync(path, 'utf-8'), true);
+    let result = JSON.parse(fs.readFileSync(path, 'utf-8'));
     return result;
 }
 
-export function klawSync (dir, opts = {}, ls = null) {
+interface KlawOptions {
+    fs?;
+    filter?;
+    nodir?;
+    traverseAll?;
+    nofile?;
+    depthLimit?;
+    rootDepth?;
+}
+
+export function klawSync (dir, opts: KlawOptions = {}, ls = null) {
     if (!ls) {
         ls = []
         dir = path.resolve(dir)
