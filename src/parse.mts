@@ -1,3 +1,44 @@
+interface AstAccess {
+    op: 'prop';
+    names: any[];
+}
+
+interface AstCall {
+    op: 'call';
+    fn;
+    args: any[];
+}
+
+interface AstOp {
+    op: String;
+    first;
+    second;
+}
+
+interface AstUnary {
+    op: String;
+    first;
+}
+
+interface AstTable {
+    table;
+    alias;
+}
+
+interface AstTableJoin extends AstTable {
+    using?;
+}
+
+interface AstTop {
+    select?;
+    from?: AstTable;
+    join?: AstTableJoin;
+    where?;
+    group?;
+    order?: { field; dir; };
+    limit?: { count; };
+}
+
 export class SQLParser {
     pos = 0;
     tokens = [];
@@ -101,7 +142,7 @@ export class SQLParser {
             if ((this.isVar(result) || this.isId(result)) && this.ifTok('(')) {
                 let args = this.parseExprList();                 
                 this.reqTok(')');
-                return {'op': 'call', 'fn': tok, 'args': args};
+                return {op: 'call', fn: tok, args: args} as AstCall;
             }
             
             return result;
@@ -130,9 +171,9 @@ export class SQLParser {
         return args;        
     }
 
-    parseUnary() {            
+    parseUnary() {
         if (this.ifTok('NOT')) {
-            return {'op': 'NOT', 'first': this.parseUnary()};
+            return {op: 'NOT', first: this.parseUnary()};
         }
         let r = this.parseVal()
         return r;
@@ -145,14 +186,14 @@ export class SQLParser {
             let args = this.parseExprList(); 
             this.reqTok(')');
                                
-            return {'op': 'IN', 'first': first, 'list': args};
+            return {op: 'IN', first: first, list: args};
         } else if (this.ifTok('NOT')) {
             if (this.ifTok('LIKE')) {
-                return {'op': 'NOT-LIKE', 'first': first, 'second': this.parseFactor()};
+                return {op: 'NOT-LIKE', first: first, second: this.parseFactor()} as AstOp;
             }
             throw new Error("Expected LIKE");
         } else if (op = this.ifTok(['>=', '<=', '>', '<', '<>' , '!=', '=', '~=', 'LIKE'])) {
-            return {'op': op, 'first': first, 'second': this.parseFactor()};
+            return {op: op, first: first, second: this.parseFactor()}  as AstOp;
         }
         return first;
     }
@@ -160,7 +201,7 @@ export class SQLParser {
     parseMul() {
         let result = this.parseFactor(), op;        
         while (op = this.ifTok(['*', '/'])) {
-            result = {'op': op, 'first': result, 'second': this.parseFactor()};
+            result = {op: op, first: result, second: this.parseFactor()} as AstOp;
         }
         return result;
     }
@@ -168,7 +209,7 @@ export class SQLParser {
     parseSum() {
         let result = this.parseMul(), op;                
         while (op = this.ifTok(['+', '-'])) {
-            result = {'op': op, 'first': result, 'second': this.parseMul()};
+            result = {op: op, first: result, second: this.parseMul()} as AstOp;
         }
         return result;
     }
@@ -176,7 +217,7 @@ export class SQLParser {
     parseBool() {
         let result = this.parseSum(), op;
         while (op = this.ifTok(['AND', 'OR'])) {
-            result = {'op': op, 'first': result, 'second': this.parseSum()};
+            result = {op: op, first: result, second: this.parseSum()}  as AstOp;
         }
         return result;
     }
@@ -186,7 +227,7 @@ export class SQLParser {
     }
 
     parseSQL() {
-        let ast = {};
+        let ast: AstTop = {};
         // Опциональный select
         if (this.ifTok('SELECT')) { }
         
@@ -198,7 +239,7 @@ export class SQLParser {
             if (this.ifTok('(')) {
                 let args = this.parseExprList(); 
                 this.reqTok(')');
-                expr = {'op': 'call', 'fn': tok, 'args': args};
+                expr = {op: 'call', fn: tok, args: args} as AstCall;
             } else {
                 expr = tok;
             }
@@ -207,7 +248,7 @@ export class SQLParser {
                 alias = this.parseId();
             }
                         
-            ast['from'] = {'table': expr, 'alias': alias};
+            ast['from'] = {table: expr, alias: alias};
         }
 
         if (this.ifTok('JOIN')) {
@@ -217,7 +258,7 @@ export class SQLParser {
                 alias = this.parseId();
             }
         
-            ast['join'] = {'table': tok, 'alias': alias};
+            ast['join'] = {table: tok, alias: alias};
 
             if (this.ifTok('USING')) {
                 ast['join']['using'] = this.parseId();

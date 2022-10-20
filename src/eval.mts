@@ -365,7 +365,7 @@ function evalData(ast, table, config) {
                         out = key['output'] ? key['output'] : 'out' + j;
                         item[out] = evalAgg(row.hasOwnProperty('_group_') ? row['_group_'] : row, k, table.info);
                     } else if (k == '*') {
-                        item = Object.assign({}, item, row);
+                        item = Object.assign({}, item, row); // row.$0
                         delete item['_group_'];
                     } else {
                         item[out] = getItem(row, k);

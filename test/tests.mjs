@@ -2,9 +2,9 @@ let runner = [];
 
 export function assert(a, b) {
     if (a == b) {
-        console.log('ok');
+        console.log('OK');
     } else {
-        console.error('fail', a, b);
+        console.error('FAIL', a, b);
     }
 }
 
