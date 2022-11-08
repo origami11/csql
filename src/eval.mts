@@ -151,11 +151,11 @@ function evalExpr(item, expr, info) {
         }    
         if (op == 'LIKE') {
             let str = evalExpr(item, expr['first'], info);
-            return str.indexOf(evalExpr(item, expr['second'], info)) >= 0;
+            return str?.indexOf(evalExpr(item, expr['second'], info)) >= 0;
         }
         if (op == 'NOT-LIKE') {
             let str = evalExpr(item, expr['first'], info);
-            return str.indexOf(evalExpr(item, expr['second'], info)) < 0;
+            return str?.indexOf(evalExpr(item, expr['second'], info)) < 0;
         }
         if ((op == '<>' || op == '!=')) {
             return evalExpr(item, expr['first'], info) != evalExpr(item, expr['second'], info);
@@ -174,7 +174,7 @@ function evalExpr(item, expr, info) {
         }
         if (op == '~=') {
             let str = evalExpr(item, expr['first'], info);
-            return str.indexOf(evalExpr(item, expr['second'], info)) > 0;
+            return str?.indexOf(evalExpr(item, expr['second'], info)) > 0;
         }
         if (op == 'prop') {
             let key = expr['names'];
