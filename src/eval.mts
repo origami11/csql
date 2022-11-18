@@ -64,7 +64,8 @@ function evalExpr(item, expr, info) {
                 return state.index;
             }
             if (expr['fn'] == 'trim') {
-                return evalExpr(item, expr['args'][0], info).trim();
+                let str = evalExpr(item, expr['args'][0], info);
+                return str?.trim();
             }
 
             if (expr['fn'] == 'concat') {
